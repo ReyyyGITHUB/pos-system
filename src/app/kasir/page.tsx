@@ -155,23 +155,25 @@ const ProductCard = React.memo(({
           <h3 className="font-medium text-slate-text text-sm line-clamp-1">{product.name}</h3>
           <p className="text-steel-gray text-caption mt-0.5 line-clamp-1">{product.description}</p>
         </div>
-        <div className="mt-3 flex items-center justify-between">
-          <span className="font-semibold text-slate-text text-sm">
+        
+        {/* Anti-overflow Stacked layout for Mobile */}
+        <div className="mt-3 flex flex-col gap-2">
+          <span className="font-semibold text-slate-text text-sm leading-none">
             {formatRupiah(product.price)}
           </span>
           
           {quantity > 0 ? (
-            <div className="flex items-center gap-2 bg-sky-tint border border-chartwell-blue/20 rounded-buttons p-0.5">
+            <div className="flex items-center justify-between bg-sky-tint border border-chartwell-blue/20 rounded-buttons p-0.5 w-full">
               <button 
                 onClick={() => onRemove(product.id)}
-                className="w-7 h-7 bg-cloud-white rounded-full flex items-center justify-center font-bold text-chartwell-blue shadow-subtle cursor-pointer active:scale-90 select-none text-sm"
+                className="w-6 h-6 bg-cloud-white rounded-full flex items-center justify-center font-bold text-chartwell-blue shadow-subtle cursor-pointer active:scale-90 select-none text-xs"
               >
                 -
               </button>
-              <span className="font-semibold text-slate-text text-xs min-w-[14px] text-center">{quantity}</span>
+              <span className="font-semibold text-slate-text text-xs">{quantity}x</span>
               <button 
                 onClick={() => onAdd(product)}
-                className="w-7 h-7 bg-cloud-white rounded-full flex items-center justify-center font-bold text-chartwell-blue shadow-subtle cursor-pointer active:scale-90 select-none text-sm"
+                className="w-6 h-6 bg-cloud-white rounded-full flex items-center justify-center font-bold text-chartwell-blue shadow-subtle cursor-pointer active:scale-90 select-none text-xs"
               >
                 +
               </button>
@@ -179,7 +181,7 @@ const ProductCard = React.memo(({
           ) : (
             <button
               onClick={() => onAdd(product)}
-              className="bg-chartwell-blue text-cloud-white text-caption font-medium py-1.5 px-3 rounded-buttons shadow-sm active:scale-95 cursor-pointer select-none"
+              className="w-full bg-chartwell-blue text-cloud-white text-caption font-medium py-1.5 rounded-buttons shadow-sm active:scale-95 cursor-pointer select-none text-center"
             >
               + Tambah
             </button>
@@ -345,16 +347,17 @@ export default function KasirPage() {
         )}
       </main>
 
-      {/* Sticky Bottom Summary Drawer */}
+      {/* Sticky Bottom Summary Drawer with pulsing detail badge */}
       {totalCartCount > 0 && (
         <div className="fixed bottom-0 left-0 right-0 z-20 bg-cloud-white border-t border-stone-border shadow-md px-4 py-3 max-w-lg mx-auto w-full flex items-center justify-between gap-4">
           <div 
             onClick={() => setCartOpen(true)}
-            className="flex-1 cursor-pointer"
+            className="flex-1 cursor-pointer flex flex-col justify-center"
           >
             <div className="flex items-center gap-1.5">
               <span className="text-lg">🛒</span>
               <span className="font-semibold text-slate-text text-sm">{totalCartCount} Barang</span>
+              <span className="text-[9px] text-chartwell-blue bg-sky-tint px-1.5 py-0.5 rounded-full font-bold animate-pulse">▲ Detail</span>
             </div>
             <p className="text-ash-gray text-caption mt-0.5">
               Total: <span className="font-bold text-slate-text">{formatRupiah(cartSummary.total)}</span>

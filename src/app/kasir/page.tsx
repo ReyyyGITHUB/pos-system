@@ -412,11 +412,11 @@ export default function KasirPage() {
             onClick={() => setCartOpen(true)}
             className="flex-1 cursor-pointer flex flex-col justify-center"
           >
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1.5">
               <IconCart className="w-4 h-4 text-slate-text" />
               <span className="font-semibold text-slate-text text-sm">{totalCartCount} Barang</span>
-              <span className="inline-flex items-center gap-0.5 text-[8px] text-chartwell-blue bg-sky-tint px-1.5 py-0.5 rounded-full font-bold animate-pulse">
-                <IconChevronUp /> Detail
+              <span className="inline-flex items-center justify-center w-5 h-5 text-chartwell-blue bg-sky-tint rounded-full">
+                <IconChevronUp />
               </span>
             </div>
             <p className="text-ash-gray text-caption mt-0.5">

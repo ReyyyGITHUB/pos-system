@@ -27,13 +27,46 @@ const CATEGORIES = [
 ]
 
 // ==========================================
+// LIGHTWEIGHT INLINE SVG ICONS
+// ==========================================
+const IconCoffeeCup = ({ className = "w-6 h-6 text-chartwell-blue" }: { className?: string }) => (
+  <svg className={className} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4c0 1.1-.9 2-2 2H5c-1.1 0-2-.9-2-2V4h14v4zM17 8V4h2a2 2 0 012 2v2h-4z" />
+  </svg>
+)
+
+const IconList = () => (
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+  </svg>
+)
+
+const IconGrid = () => (
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+  </svg>
+)
+
+const IconCart = ({ className = "w-5 h-5 text-slate-text" }: { className?: string }) => (
+  <svg className={className} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+  </svg>
+)
+
+const IconChevronUp = () => (
+  <svg className="w-3 h-3 text-chartwell-blue" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
+  </svg>
+)
+
+// ==========================================
 // SUB-COMPONENT: STATIC HEADER (MEMOIZED)
 // ==========================================
 const Header = React.memo(({ onSignOut }: { onSignOut: () => void }) => {
   return (
     <header className="sticky top-0 z-10 bg-cloud-white border-b border-stone-border shadow-subtle px-4 py-3 flex items-center justify-between">
       <div className="flex items-center gap-2">
-        <span className="text-xl">☕</span>
+        <IconCoffeeCup className="w-5 h-5 text-chartwell-blue" />
         <h1 className="font-roobert font-medium text-slate-text text-base leading-none">
           {APP_CONFIG.name}
         </h1>
@@ -87,10 +120,10 @@ const SearchBar = React.memo(({
       </div>
       <button 
         onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
-        className="bg-cloud-white border border-stone-border rounded-inputs p-2 flex items-center justify-center cursor-pointer shadow-subtle active:scale-95 text-slate-text text-caption"
+        className="bg-cloud-white border border-stone-border rounded-inputs p-2 flex items-center justify-center cursor-pointer shadow-subtle active:scale-95 text-slate-text"
         title="Ubah Layout"
       >
-        {viewMode === 'grid' ? '📋 List' : '⏹️ Grid'}
+        {viewMode === 'grid' ? <IconList /> : <IconGrid />}
       </button>
     </div>
   )
@@ -145,18 +178,27 @@ const ProductCard = React.memo(({
 }) => {
   const isGrid = viewMode === 'grid'
 
+  const imageBlock = product.image_url ? (
+    <img 
+      src={product.image_url} 
+      alt={product.name} 
+      className="w-full aspect-[4/3] object-cover rounded-md mb-3"
+    />
+  ) : (
+    <div className="w-full aspect-[4/3] bg-sky-tint rounded-md mb-3 flex items-center justify-center">
+      <IconCoffeeCup className="w-7 h-7 text-chartwell-blue/60" />
+    </div>
+  )
+
   if (isGrid) {
     return (
       <div className="bg-cloud-white rounded-cards shadow-md border border-stone-border p-4 flex flex-col justify-between transition-all duration-150">
         <div>
-          <div className="w-full aspect-[4/3] bg-sky-tint rounded-md mb-3 flex items-center justify-center text-2xl select-none">
-            ☕
-          </div>
+          {imageBlock}
           <h3 className="font-medium text-slate-text text-sm line-clamp-1">{product.name}</h3>
           <p className="text-steel-gray text-caption mt-0.5 line-clamp-1">{product.description}</p>
         </div>
         
-        {/* Anti-overflow Stacked layout for Mobile */}
         <div className="mt-3 flex flex-col gap-2">
           <span className="font-semibold text-slate-text text-sm leading-none">
             {formatRupiah(product.price)}
@@ -194,9 +236,17 @@ const ProductCard = React.memo(({
   return (
     <div className="bg-cloud-white rounded-md shadow-sm border border-stone-border p-3 flex items-center justify-between gap-3">
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 bg-sky-tint rounded-md flex items-center justify-center text-lg select-none">
-          ☕
-        </div>
+        {product.image_url ? (
+          <img 
+            src={product.image_url} 
+            alt={product.name} 
+            className="w-10 h-10 object-cover rounded-md"
+          />
+        ) : (
+          <div className="w-10 h-10 bg-sky-tint rounded-md flex items-center justify-center">
+            <IconCoffeeCup className="w-5 h-5 text-chartwell-blue/60" />
+          </div>
+        )}
         <div>
           <h3 className="font-medium text-slate-text text-sm">{product.name}</h3>
           <span className="font-semibold text-steel-gray text-caption">
@@ -240,6 +290,7 @@ ProductCard.displayName = 'ProductCard'
 export default function KasirPage() {
   const router = useRouter()
   const [mounted, setMounted] = useState(false)
+  const [selectedMethod, setSelectedMethod] = useState<'tunai' | 'qris' | 'debit' | null>(null)
 
   // Selective selectors to isolate state subscriptions
   const cartItems = useCartStore((s) => s.cartItems)
@@ -272,6 +323,15 @@ export default function KasirPage() {
       alert('Gagal mengeluarkan sesi. Silakan muat ulang halaman.')
     }
   }, [router])
+
+  // Process Confirm Transaction
+  const handleProcessTransaction = () => {
+    if (!selectedMethod) return
+    alert(`Transaksi Berhasil!\nMetode: ${selectedMethod.toUpperCase()}\nTotal: ${formatRupiah(cartSummary.total)}`)
+    clearCart()
+    setSelectedMethod(null)
+    setCartOpen(false)
+  }
 
   // Filter products memoized
   const filteredProducts = useMemo(() => {
@@ -310,7 +370,6 @@ export default function KasirPage() {
 
       {/* Main Layout Area */}
       <main className="p-4 flex-1 max-w-lg mx-auto w-full space-y-4">
-        {/* Memoized Search Bar */}
         <SearchBar 
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
@@ -318,7 +377,6 @@ export default function KasirPage() {
           setViewMode={setViewMode}
         />
 
-        {/* Memoized Category Slider */}
         <CategorySlider 
           selectedCategory={selectedCategory}
           setSelectedCategory={setSelectedCategory}
@@ -347,17 +405,19 @@ export default function KasirPage() {
         )}
       </main>
 
-      {/* Sticky Bottom Summary Drawer with pulsing detail badge */}
+      {/* Sticky Bottom Summary Drawer */}
       {totalCartCount > 0 && (
         <div className="fixed bottom-0 left-0 right-0 z-20 bg-cloud-white border-t border-stone-border shadow-md px-4 py-3 max-w-lg mx-auto w-full flex items-center justify-between gap-4">
           <div 
             onClick={() => setCartOpen(true)}
             className="flex-1 cursor-pointer flex flex-col justify-center"
           >
-            <div className="flex items-center gap-1.5">
-              <span className="text-lg">🛒</span>
+            <div className="flex items-center gap-1">
+              <IconCart className="w-4 h-4 text-slate-text" />
               <span className="font-semibold text-slate-text text-sm">{totalCartCount} Barang</span>
-              <span className="text-[9px] text-chartwell-blue bg-sky-tint px-1.5 py-0.5 rounded-full font-bold animate-pulse">▲ Detail</span>
+              <span className="inline-flex items-center gap-0.5 text-[8px] text-chartwell-blue bg-sky-tint px-1.5 py-0.5 rounded-full font-bold animate-pulse">
+                <IconChevronUp /> Detail
+              </span>
             </div>
             <p className="text-ash-gray text-caption mt-0.5">
               Total: <span className="font-bold text-slate-text">{formatRupiah(cartSummary.total)}</span>
@@ -365,7 +425,7 @@ export default function KasirPage() {
           </div>
           <button 
             onClick={() => setCartOpen(true)}
-            className="bg-chartwell-blue text-cloud-white font-medium py-2.5 px-6 rounded-buttons shadow-sm hover:opacity-95 active:scale-[0.98] transition-all cursor-pointer text-sm"
+            className="bg-chartwell-blue text-cloud-white font-medium py-2 px-5 rounded-buttons shadow-sm hover:opacity-95 active:scale-[0.98] transition-all cursor-pointer text-sm"
           >
             Bayar Sekarang
           </button>
@@ -374,7 +434,10 @@ export default function KasirPage() {
 
       {/* Smooth, Hardware-Accelerated Bottom Sheet & Backdrop Portal */}
       <div 
-        onClick={() => setCartOpen(false)}
+        onClick={() => {
+          setCartOpen(false)
+          setSelectedMethod(null)
+        }}
         className={`fixed inset-0 z-30 bg-black/40 backdrop-blur-[0.5px] transition-opacity duration-200 ${
           isCartOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
         }`}
@@ -387,7 +450,10 @@ export default function KasirPage() {
       >
         {/* Sheet Handle */}
         <div 
-          onClick={() => setCartOpen(false)}
+          onClick={() => {
+            setCartOpen(false)
+            setSelectedMethod(null)
+          }}
           className="py-3 flex justify-center cursor-pointer select-none"
         >
           <div className="w-10 h-1 bg-stone-border rounded-full" />
@@ -451,26 +517,45 @@ export default function KasirPage() {
             </div>
           </div>
 
-          {/* Payment Methods */}
-          <div className="grid grid-cols-3 gap-2">
-            {['Tunai', 'QRIS', 'Debit'].map((method) => (
-              <button
-                key={method}
-                onClick={() => {
-                  alert(`Pembayaran ${method} Berhasil!\nTotal: ${formatRupiah(cartSummary.total)}`);
-                  clearCart();
-                  setCartOpen(false);
-                }}
-                className="bg-cloud-white border border-stone-border hover:border-chartwell-blue hover:text-chartwell-blue active:scale-95 text-slate-text text-caption py-2 rounded-inputs shadow-subtle transition-all cursor-pointer font-medium text-center"
-              >
-                {method}
-              </button>
-            ))}
+          {/* Secure Payment Method Selector */}
+          <div className="space-y-2">
+            <label className="block text-caption font-semibold text-ash-gray">
+              Pilih Metode Pembayaran
+            </label>
+            <div className="grid grid-cols-3 gap-2">
+              {(['tunai', 'qris', 'debit'] as const).map((method) => {
+                const isSelected = selectedMethod === method
+                return (
+                  <button
+                    key={method}
+                    onClick={() => setSelectedMethod(method)}
+                    className={`text-caption py-2 rounded-inputs shadow-subtle transition-all cursor-pointer font-medium text-center border capitalize ${
+                      isSelected
+                        ? 'bg-chartwell-blue text-cloud-white border-chartwell-blue shadow-sm'
+                        : 'bg-cloud-white text-slate-text border-stone-border hover:border-chartwell-blue/50'
+                    }`}
+                  >
+                    {method}
+                  </button>
+                )
+              })}
+            </div>
           </div>
+
+          {/* Final Process Checkout Action Button */}
+          <button
+            onClick={handleProcessTransaction}
+            disabled={!selectedMethod}
+            className={`w-full font-medium py-2.5 px-4 rounded-buttons text-sm transition-all shadow-sm ${
+              selectedMethod
+                ? 'bg-chartwell-blue text-cloud-white cursor-pointer active:scale-[0.98] hover:opacity-95'
+                : 'bg-stone-border text-steel-gray cursor-not-allowed opacity-60'
+            }`}
+          >
+            Konfirmasi & Proses Transaksi
+          </button>
         </div>
       </div>
     </div>
   )
 }
-
-

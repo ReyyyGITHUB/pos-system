@@ -27,6 +27,44 @@ const CATEGORIES = [
 ]
 
 // ==========================================
+// LIGHTWEIGHT HAPTICS & REAL-TIME WEB AUDIO SYNTHESIZER
+// ==========================================
+const playTapSound = () => {
+  if (typeof window === 'undefined') return
+  try {
+    const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)()
+    const osc = audioCtx.createOscillator()
+    const gainNode = audioCtx.createGain()
+    
+    osc.connect(gainNode)
+    gainNode.connect(audioCtx.destination)
+    
+    osc.type = 'sine'
+    osc.frequency.setValueAtTime(900, audioCtx.currentTime)
+    osc.frequency.exponentialRampToValueAtTime(150, audioCtx.currentTime + 0.06)
+    
+    gainNode.gain.setValueAtTime(0.08, audioCtx.currentTime) // Soft 8% volume
+    gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.06)
+    
+    osc.start()
+    osc.stop(audioCtx.currentTime + 0.06)
+  } catch {
+    // Fail silently if browser blocks audio context initially
+  }
+}
+
+const triggerHaptic = () => {
+  if (typeof navigator !== 'undefined' && navigator.vibrate) {
+    navigator.vibrate(15) // Short premium 15ms pulse
+  }
+}
+
+const triggerFeedback = () => {
+  playTapSound()
+  triggerHaptic()
+}
+
+// ==========================================
 // LIGHTWEIGHT INLINE SVG ICONS
 // ==========================================
 const IconCoffeeCup = ({ className = "w-6 h-6 text-chartwell-blue" }: { className?: string }) => (
@@ -74,7 +112,7 @@ const Header = React.memo(({ onSignOut }: { onSignOut: () => void }) => {
       <div className="flex items-center gap-3">
         <span className="text-caption text-ash-gray font-medium hidden sm:inline">Kasir Toko</span>
         <button 
-          onClick={onSignOut}
+          onClick={() => { triggerFeedback(); onSignOut(); }}
           className="text-caption text-red-500 border border-red-200 hover:bg-red-50 active:scale-95 transition-all py-1 px-3 rounded-buttons font-medium cursor-pointer"
         >
           Keluar
@@ -111,7 +149,7 @@ const SearchBar = React.memo(({
         />
         {searchQuery && (
           <button 
-            onClick={() => setSearchQuery('')}
+            onClick={() => { triggerFeedback(); setSearchQuery(''); }}
             className="absolute right-2.5 top-2.5 text-steel-gray hover:text-slate-text text-sm font-bold cursor-pointer"
           >
             ✕
@@ -119,7 +157,7 @@ const SearchBar = React.memo(({
         )}
       </div>
       <button 
-        onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
+        onClick={() => { triggerFeedback(); setViewMode(viewMode === 'grid' ? 'list' : 'grid'); }}
         className="bg-cloud-white border border-stone-border rounded-inputs p-2 flex items-center justify-center cursor-pointer shadow-subtle active:scale-95 text-slate-text"
         title="Ubah Layout"
       >
@@ -145,7 +183,7 @@ const CategorySlider = React.memo(({
       {CATEGORIES.map((cat) => (
         <button
           key={cat.id}
-          onClick={() => setSelectedCategory(cat.id === 'all' ? 'Semua' : cat.id)}
+          onClick={() => { triggerFeedback(); setSelectedCategory(cat.id === 'all' ? 'Semua' : cat.id); }}
           className={`whitespace-nowrap px-4 py-1.5 rounded-buttons text-caption font-medium border transition-all cursor-pointer ${
             (cat.id === 'all' && selectedCategory === 'Semua') || selectedCategory === cat.id
               ? 'bg-chartwell-blue text-cloud-white border-chartwell-blue shadow-sm'
@@ -207,14 +245,14 @@ const ProductCard = React.memo(({
           {quantity > 0 ? (
             <div className="flex items-center justify-between bg-sky-tint border border-chartwell-blue/20 rounded-buttons p-0.5 w-full">
               <button 
-                onClick={() => onRemove(product.id)}
+                onClick={() => { triggerFeedback(); onRemove(product.id); }}
                 className="w-6 h-6 bg-cloud-white rounded-full flex items-center justify-center font-bold text-chartwell-blue shadow-subtle cursor-pointer active:scale-90 select-none text-xs"
               >
                 -
               </button>
               <span className="font-semibold text-slate-text text-xs">{quantity}x</span>
               <button 
-                onClick={() => onAdd(product)}
+                onClick={() => { triggerFeedback(); onAdd(product); }}
                 className="w-6 h-6 bg-cloud-white rounded-full flex items-center justify-center font-bold text-chartwell-blue shadow-subtle cursor-pointer active:scale-90 select-none text-xs"
               >
                 +
@@ -222,7 +260,7 @@ const ProductCard = React.memo(({
             </div>
           ) : (
             <button
-              onClick={() => onAdd(product)}
+              onClick={() => { triggerFeedback(); onAdd(product); }}
               className="w-full bg-chartwell-blue text-cloud-white text-caption font-medium py-1.5 rounded-buttons shadow-sm active:scale-95 cursor-pointer select-none text-center"
             >
               + Tambah
@@ -258,14 +296,14 @@ const ProductCard = React.memo(({
       {quantity > 0 ? (
         <div className="flex items-center gap-2 bg-sky-tint border border-chartwell-blue/20 rounded-buttons p-0.5">
           <button 
-            onClick={() => onRemove(product.id)}
+            onClick={() => { triggerFeedback(); onRemove(product.id); }}
             className="w-7 h-7 bg-cloud-white rounded-full flex items-center justify-center font-bold text-chartwell-blue shadow-subtle cursor-pointer active:scale-90 select-none"
           >
             -
           </button>
           <span className="font-semibold text-slate-text text-xs min-w-[14px] text-center">{quantity}</span>
           <button 
-            onClick={() => onAdd(product)}
+            onClick={() => { triggerFeedback(); onAdd(product); }}
             className="w-7 h-7 bg-cloud-white rounded-full flex items-center justify-center font-bold text-chartwell-blue shadow-subtle cursor-pointer active:scale-90 select-none"
           >
             +
@@ -273,7 +311,7 @@ const ProductCard = React.memo(({
         </div>
       ) : (
         <button
-          onClick={() => onAdd(product)}
+          onClick={() => { triggerFeedback(); onAdd(product); }}
           className="bg-chartwell-blue text-cloud-white text-caption font-medium py-1 px-3 rounded-buttons shadow-sm active:scale-95 cursor-pointer select-none"
         >
           + Tambah
@@ -409,7 +447,7 @@ export default function KasirPage() {
       {totalCartCount > 0 && (
         <div className="fixed bottom-0 left-0 right-0 z-20 bg-cloud-white border-t border-stone-border shadow-md px-4 py-3 max-w-lg mx-auto w-full flex items-center justify-between gap-4">
           <div 
-            onClick={() => setCartOpen(true)}
+            onClick={() => { triggerFeedback(); setCartOpen(true); }}
             className="flex-1 cursor-pointer flex flex-col justify-center"
           >
             <div className="flex items-center gap-1.5">
@@ -424,7 +462,7 @@ export default function KasirPage() {
             </p>
           </div>
           <button 
-            onClick={() => setCartOpen(true)}
+            onClick={() => { triggerFeedback(); setCartOpen(true); }}
             className="bg-chartwell-blue text-cloud-white font-medium py-2 px-5 rounded-buttons shadow-sm hover:opacity-95 active:scale-[0.98] transition-all cursor-pointer text-sm"
           >
             Bayar Sekarang
@@ -435,6 +473,7 @@ export default function KasirPage() {
       {/* Smooth, Hardware-Accelerated Bottom Sheet & Backdrop Portal */}
       <div 
         onClick={() => {
+          triggerFeedback()
           setCartOpen(false)
           setSelectedMethod(null)
         }}
@@ -451,6 +490,7 @@ export default function KasirPage() {
         {/* Sheet Handle */}
         <div 
           onClick={() => {
+            triggerFeedback()
             setCartOpen(false)
             setSelectedMethod(null)
           }}
@@ -463,7 +503,7 @@ export default function KasirPage() {
         <div className="px-4 pb-3 flex items-center justify-between border-b border-stone-border">
           <h2 className="font-medium text-slate-text text-sm">Keranjang Belanja</h2>
           <button 
-            onClick={clearCart}
+            onClick={() => { triggerFeedback(); clearCart(); }}
             className="text-caption text-red-500 font-medium hover:underline cursor-pointer"
           >
             Kosongkan
@@ -483,14 +523,14 @@ export default function KasirPage() {
               
               <div className="flex items-center gap-2 bg-sky-tint border border-chartwell-blue/20 rounded-buttons p-0.5">
                 <button 
-                  onClick={() => removeFromCart(item.product.id)}
+                  onClick={() => { triggerFeedback(); removeFromCart(item.product.id); }}
                   className="w-7 h-7 bg-cloud-white rounded-full flex items-center justify-center font-bold text-chartwell-blue shadow-subtle cursor-pointer active:scale-90"
                 >
                   -
                 </button>
                 <span className="font-semibold text-slate-text text-xs min-w-[14px] text-center">{item.quantity}</span>
                 <button 
-                  onClick={() => addToCart(item.product)}
+                  onClick={() => { triggerFeedback(); addToCart(item.product); }}
                   className="w-7 h-7 bg-cloud-white rounded-full flex items-center justify-center font-bold text-chartwell-blue shadow-subtle cursor-pointer active:scale-90"
                 >
                   +
@@ -528,7 +568,7 @@ export default function KasirPage() {
                 return (
                   <button
                     key={method}
-                    onClick={() => setSelectedMethod(method)}
+                    onClick={() => { triggerFeedback(); setSelectedMethod(method); }}
                     className={`text-caption py-2 rounded-inputs shadow-subtle transition-all cursor-pointer font-medium text-center border capitalize ${
                       isSelected
                         ? 'bg-chartwell-blue text-cloud-white border-chartwell-blue shadow-sm'

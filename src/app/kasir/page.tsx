@@ -327,7 +327,12 @@ ProductCard.displayName = 'ProductCard'
 export default function KasirPage() {
   const router = useRouter()
   const [mounted, setMounted] = useState(false)
-  const [selectedMethod, setSelectedMethod] = useState<'tunai' | 'qris' | 'debit' | null>(null)
+
+  // Payment Sub-Flow States
+  const [paymentStep, setPaymentStep] = useState<'cart' | 'tunai' | 'qris'>('cart')
+  const [selectedMethod, setSelectedMethod] = useState<'tunai' | 'qris' | null>(null)
+  const [cashInput, setCashInput] = useState<string>('0')
+  const [qrisGenerating, setQrisGenerating] = useState(false)
 
   // Selective selectors to isolate state subscriptions
   const cartItems = useCartStore((s) => s.cartItems)
@@ -361,15 +366,6 @@ export default function KasirPage() {
     }
   }, [router])
 
-  // Process Confirm Transaction
-  const handleProcessTransaction = () => {
-    if (!selectedMethod) return
-    alert(`Transaksi Berhasil!\nMetode: ${selectedMethod.toUpperCase()}\nTotal: ${formatRupiah(cartSummary.total)}`)
-    clearCart()
-    setSelectedMethod(null)
-    setCartOpen(false)
-  }
-
   // Filter products memoized
   const filteredProducts = useMemo(() => {
     return MOCK_PRODUCTS.filter((product) => {
@@ -398,7 +394,61 @@ export default function KasirPage() {
     return item ? item.quantity : 0
   }, [cartItems])
 
+  // Triggered when payment method "Lanjut" is pressed
+  const handleProceedToPayment = () => {
+    if (!selectedMethod) return
+    triggerFeedback()
+    if (selectedMethod === 'qris') {
+      setPaymentStep('qris')
+      setQrisGenerating(true)
+      setTimeout(() => {
+        setQrisGenerating(false)
+      }, 1200) // Simulated spawn API delay
+    } else {
+      setPaymentStep('tunai')
+      setCashInput('0')
+    }
+  }
+
+  // Handle Custom Numpad input
+  const handleNumpadPress = (key: string) => {
+    triggerFeedback()
+    if (key === 'C') {
+      setCashInput('0')
+    } else if (key === '⌫') {
+      setCashInput((prev) => (prev.length > 1 ? prev.slice(0, -1) : '0'))
+    } else {
+      setCashInput((prev) => (prev === '0' ? key : prev + key))
+    }
+  }
+
+  // Finalize Cash checkout
+  const handleCashPaymentSuccess = () => {
+    const received = parseInt(cashInput || '0')
+    if (received < cartSummary.total) return
+    triggerFeedback()
+    alert(`Transaksi Tunai Sukses!\nTotal: ${formatRupiah(cartSummary.total)}\nBayar: ${formatRupiah(received)}\nKembalian: ${formatRupiah(received - cartSummary.total)}`)
+    clearCart()
+    setPaymentStep('cart')
+    setSelectedMethod(null)
+    setCartOpen(false)
+  }
+
+  // Finalize QRIS checkout
+  const handleQrisPaymentSuccess = () => {
+    triggerFeedback()
+    alert(`Transaksi QRIS Sukses!\nTotal: ${formatRupiah(cartSummary.total)}\nStatus: DANA MASUK (API APPROVED)`)
+    clearCart()
+    setPaymentStep('cart')
+    setSelectedMethod(null)
+    setCartOpen(false)
+  }
+
   if (!mounted) return null
+
+  // Cash Calculation Variables
+  const cashReceivedValue = parseInt(cashInput || '0')
+  const changeValue = cashReceivedValue - cartSummary.total
 
   return (
     <div className="min-h-screen bg-canvas-fog pb-24 select-none flex flex-col font-inter">
@@ -407,6 +457,7 @@ export default function KasirPage() {
 
       {/* Main Layout Area */}
       <main className="p-4 flex-1 max-w-lg mx-auto w-full space-y-4">
+        {/* Memoized Search Bar */}
         <SearchBar 
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
@@ -414,6 +465,7 @@ export default function KasirPage() {
           setViewMode={setViewMode}
         />
 
+        {/* Memoized Category Slider */}
         <CategorySlider 
           selectedCategory={selectedCategory}
           setSelectedCategory={setSelectedCategory}
@@ -442,7 +494,7 @@ export default function KasirPage() {
         )}
       </main>
 
-      {/* Sticky Bottom Summary Drawer */}
+      {/* Sticky Bottom Summary Drawer with pulsing detail badge */}
       {totalCartCount > 0 && (
         <div className="fixed bottom-0 left-0 right-0 z-20 bg-cloud-white border-t border-stone-border shadow-md px-4 py-3 max-w-lg mx-auto w-full flex items-center justify-between gap-4">
           <div 
@@ -474,6 +526,7 @@ export default function KasirPage() {
         onClick={() => {
           triggerFeedback()
           setCartOpen(false)
+          setPaymentStep('cart')
           setSelectedMethod(null)
         }}
         className={`fixed inset-0 z-30 bg-black/40 backdrop-blur-[0.5px] transition-opacity duration-200 ${
@@ -482,118 +535,253 @@ export default function KasirPage() {
       />
 
       <div 
-        className={`fixed bottom-0 left-0 right-0 z-40 bg-cloud-white rounded-t-largecard max-w-lg mx-auto w-full border-t border-stone-border shadow-xl transform transition-transform duration-300 ease-out will-change-transform max-h-[85vh] flex flex-col ${
+        className={`fixed bottom-0 left-0 right-0 z-40 bg-cloud-white rounded-t-largecard max-w-lg mx-auto w-full border-t border-stone-border shadow-xl transform transition-transform duration-300 ease-out will-change-transform max-h-[88vh] flex flex-col ${
           isCartOpen ? 'translate-y-0' : 'translate-y-full'
         }`}
       >
-        {/* Sheet Handle */}
-        <div 
-          onClick={() => {
-            triggerFeedback()
-            setCartOpen(false)
-            setSelectedMethod(null)
-          }}
-          className="py-3 flex justify-center cursor-pointer select-none"
-        >
+        {/* Dynamic Step-Based Header */}
+        <div className="py-3 flex justify-center cursor-pointer select-none">
           <div className="w-10 h-1 bg-stone-border rounded-full" />
         </div>
 
-        {/* Sheet Header */}
-        <div className="px-4 pb-3 flex items-center justify-between border-b border-stone-border">
-          <h2 className="font-medium text-slate-text text-sm">Keranjang Belanja</h2>
-          <button 
-            onClick={() => { triggerFeedback(); clearCart(); }}
-            className="text-caption text-red-500 font-medium hover:underline cursor-pointer"
-          >
-            Kosongkan
-          </button>
-        </div>
+        {paymentStep === 'cart' && (
+          <>
+            <div className="px-4 pb-3 flex items-center justify-between border-b border-stone-border">
+              <h2 className="font-medium text-slate-text text-sm">Keranjang Belanja</h2>
+              <button 
+                onClick={() => { triggerFeedback(); clearCart(); }}
+                className="text-caption text-red-500 font-medium hover:underline cursor-pointer"
+              >
+                Kosongkan
+              </button>
+            </div>
 
-        {/* List Item Cart Scroll area */}
-        <div className="p-4 overflow-y-auto space-y-3 flex-1">
-          {cartItems.map((item) => (
-            <div key={item.product.id} className="flex items-center justify-between border-b border-stone-border/40 pb-3 last:border-b-0 last:pb-0">
-              <div className="flex-1 min-w-0 pr-3">
-                <h4 className="font-medium text-slate-text text-sm truncate">{item.product.name}</h4>
-                <p className="text-ash-gray text-caption mt-0.5">
-                  {formatRupiah(item.product.price)} / unit
-                </p>
+            {/* List Item Cart Scroll area */}
+            <div className="p-4 overflow-y-auto space-y-3 flex-1 max-h-[40vh]">
+              {cartItems.map((item) => (
+                <div key={item.product.id} className="flex items-center justify-between border-b border-stone-border/40 pb-3 last:border-b-0 last:pb-0">
+                  <div className="flex-1 min-w-0 pr-3">
+                    <h4 className="font-medium text-slate-text text-sm truncate">{item.product.name}</h4>
+                    <p className="text-ash-gray text-caption mt-0.5">
+                      {formatRupiah(item.product.price)} / unit
+                    </p>
+                  </div>
+                  
+                  <div className="flex items-center gap-2 bg-sky-tint border border-chartwell-blue/20 rounded-buttons p-0.5">
+                    <button 
+                      onClick={() => { triggerFeedback(); removeFromCart(item.product.id); }}
+                      className="w-7 h-7 bg-cloud-white rounded-full flex items-center justify-center font-bold text-chartwell-blue shadow-subtle cursor-pointer active:scale-90"
+                    >
+                      -
+                    </button>
+                    <span className="font-semibold text-slate-text text-xs min-w-[14px] text-center">{item.quantity}</span>
+                    <button 
+                      onClick={() => { triggerFeedback(); addToCart(item.product); }}
+                      className="w-7 h-7 bg-cloud-white rounded-full flex items-center justify-center font-bold text-chartwell-blue shadow-subtle cursor-pointer active:scale-90"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Cart Summary & Payment Method Selector */}
+            <div className="bg-canvas-fog border-t border-stone-border p-4 space-y-4">
+              <div className="space-y-1.5 text-caption">
+                <div className="flex justify-between text-ash-gray">
+                  <span>Subtotal</span>
+                  <span>{formatRupiah(cartSummary.subtotal)}</span>
+                </div>
+                <div className="flex justify-between text-ash-gray">
+                  <span>Pajak (10%)</span>
+                  <span>{formatRupiah(cartSummary.tax)}</span>
+                </div>
+                <div className="flex justify-between font-semibold text-slate-text text-sm pt-1 border-t border-stone-border/60">
+                  <span>Total Pembayaran</span>
+                  <span>{formatRupiah(cartSummary.total)}</span>
+                </div>
               </div>
-              
-              <div className="flex items-center gap-2 bg-sky-tint border border-chartwell-blue/20 rounded-buttons p-0.5">
-                <button 
-                  onClick={() => { triggerFeedback(); removeFromCart(item.product.id); }}
-                  className="w-7 h-7 bg-cloud-white rounded-full flex items-center justify-center font-bold text-chartwell-blue shadow-subtle cursor-pointer active:scale-90"
-                >
-                  -
-                </button>
-                <span className="font-semibold text-slate-text text-xs min-w-[14px] text-center">{item.quantity}</span>
-                <button 
-                  onClick={() => { triggerFeedback(); addToCart(item.product); }}
-                  className="w-7 h-7 bg-cloud-white rounded-full flex items-center justify-center font-bold text-chartwell-blue shadow-subtle cursor-pointer active:scale-90"
-                >
-                  +
-                </button>
+
+              {/* Only Tunai & QRIS Payment selectors */}
+              <div className="space-y-2">
+                <label className="block text-caption font-semibold text-ash-gray">
+                  Pilih Metode Pembayaran
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  {(['tunai', 'qris'] as const).map((method) => {
+                    const isSelected = selectedMethod === method
+                    return (
+                      <button
+                        key={method}
+                        onClick={() => { triggerFeedback(); setSelectedMethod(method); }}
+                        className={`text-caption py-2.5 rounded-inputs shadow-subtle transition-all cursor-pointer font-semibold text-center border capitalize ${
+                          isSelected
+                            ? 'bg-chartwell-blue text-cloud-white border-chartwell-blue shadow-sm'
+                            : 'bg-cloud-white text-slate-text border-stone-border hover:border-chartwell-blue/50'
+                        }`}
+                      >
+                        {method === 'tunai' ? '💵 Tunai' : '📱 QRIS'}
+                      </button>
+                    )
+                  })}
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
 
-        {/* Transaction summary & Payment Panel */}
-        <div className="bg-canvas-fog border-t border-stone-border p-4 space-y-4">
-          <div className="space-y-1.5 text-caption">
-            <div className="flex justify-between text-ash-gray">
-              <span>Subtotal</span>
-              <span>{formatRupiah(cartSummary.subtotal)}</span>
+              <button
+                onClick={handleProceedToPayment}
+                disabled={!selectedMethod}
+                className={`w-full font-medium py-2.5 px-4 rounded-buttons text-sm transition-all shadow-sm ${
+                  selectedMethod
+                    ? 'bg-chartwell-blue text-cloud-white cursor-pointer active:scale-[0.98] hover:opacity-95'
+                    : 'bg-stone-border text-steel-gray cursor-not-allowed opacity-60'
+                }`}
+              >
+                Lanjut ke Pembayaran
+              </button>
             </div>
-            <div className="flex justify-between text-ash-gray">
-              <span>Pajak (10%)</span>
-              <span>{formatRupiah(cartSummary.tax)}</span>
-            </div>
-            <div className="flex justify-between font-semibold text-slate-text text-sm pt-1 border-t border-stone-border/60">
-              <span>Total Pembayaran</span>
-              <span>{formatRupiah(cartSummary.total)}</span>
-            </div>
-          </div>
+          </>
+        )}
 
-          {/* Secure Payment Method Selector */}
-          <div className="space-y-2">
-            <label className="block text-caption font-semibold text-ash-gray">
-              Pilih Metode Pembayaran
-            </label>
-            <div className="grid grid-cols-3 gap-2">
-              {(['tunai', 'qris', 'debit'] as const).map((method) => {
-                const isSelected = selectedMethod === method
-                return (
+        {/* paymentStep === 'tunai' (Sub-layar Tunai Kustom) */}
+        {paymentStep === 'tunai' && (
+          <div className="flex-1 flex flex-col max-h-[82vh] overflow-y-auto">
+            <div className="px-4 pb-3 flex items-center gap-3 border-b border-stone-border">
+              <button 
+                onClick={() => { triggerFeedback(); setPaymentStep('cart'); }}
+                className="text-slate-text font-bold hover:text-chartwell-blue text-sm cursor-pointer p-1"
+              >
+                ← Kembali
+              </button>
+              <h2 className="font-medium text-slate-text text-sm">Pembayaran Tunai</h2>
+            </div>
+
+            {/* Cash Calculations */}
+            <div className="p-4 space-y-3">
+              <div className="bg-canvas-fog rounded-cards border border-stone-border p-3 space-y-2">
+                <div className="flex justify-between text-caption text-ash-gray">
+                  <span>Tagihan Penjualan</span>
+                  <span className="font-bold text-slate-text">{formatRupiah(cartSummary.total)}</span>
+                </div>
+                <div className="flex justify-between text-caption text-ash-gray">
+                  <span>Uang Diterima</span>
+                  <span className="font-bold text-chartwell-blue text-sm">{formatRupiah(cashReceivedValue)}</span>
+                </div>
+                <div className="flex justify-between text-caption text-ash-gray pt-1.5 border-t border-stone-border/50">
+                  <span>Status Kembalian</span>
+                  {changeValue >= 0 ? (
+                    <span className="font-extrabold text-green-600">{formatRupiah(changeValue)}</span>
+                  ) : (
+                    <span className="font-extrabold text-red-500">Kurang: {formatRupiah(Math.abs(changeValue))}</span>
+                  )}
+                </div>
+              </div>
+
+              {/* Color-coded Rupiah Notes Slider */}
+              <div className="overflow-x-auto -mx-4 px-4 py-1.5 flex gap-2 scrollbar-none">
+                <button
+                  onClick={() => { triggerFeedback(); setCashInput(cartSummary.total.toString()); }}
+                  className="whitespace-nowrap px-3.5 py-1.5 rounded-inputs text-caption font-bold bg-sky-tint text-chartwell-blue border border-chartwell-blue/30 active:scale-95 transition-all cursor-pointer"
+                >
+                  Uang Pas
+                </button>
+                {[
+                  { value: 2000, label: 'Rp 2k', bg: 'bg-stone-100 border-stone-300 text-stone-700' },
+                  { value: 5000, label: 'Rp 5k', bg: 'bg-amber-100 border-amber-300 text-amber-800' },
+                  { value: 10000, label: 'Rp 10k', bg: 'bg-purple-100 border-purple-300 text-purple-800' },
+                  { value: 20000, label: 'Rp 20k', bg: 'bg-emerald-100 border-emerald-300 text-emerald-800' },
+                  { value: 50000, label: 'Rp 50k', bg: 'bg-blue-100 border-blue-300 text-blue-800' },
+                  { value: 100000, label: 'Rp 100k', bg: 'bg-rose-100 border-rose-300 text-rose-800' }
+                ].map((note) => (
                   <button
-                    key={method}
-                    onClick={() => { triggerFeedback(); setSelectedMethod(method); }}
-                    className={`text-caption py-2 rounded-inputs shadow-subtle transition-all cursor-pointer font-medium text-center border capitalize ${
-                      isSelected
-                        ? 'bg-chartwell-blue text-cloud-white border-chartwell-blue shadow-sm'
-                        : 'bg-cloud-white text-slate-text border-stone-border hover:border-chartwell-blue/50'
-                    }`}
+                    key={note.value}
+                    onClick={() => { triggerFeedback(); setCashInput(note.value.toString()); }}
+                    className={`whitespace-nowrap px-3.5 py-1.5 rounded-inputs text-caption font-bold border active:scale-95 transition-all cursor-pointer ${note.bg}`}
                   >
-                    {method}
+                    {note.label}
                   </button>
-                )
-              })}
+                ))}
+              </div>
+
+              {/* Custom UI Numpad Grid */}
+              <div className="grid grid-cols-3 gap-2 py-2 max-w-[280px] mx-auto w-full">
+                {['1', '2', '3', '4', '5', '6', '7', '8', '9', 'C', '0', '⌫'].map((key) => (
+                  <button
+                    key={key}
+                    onClick={() => handleNumpadPress(key)}
+                    className="h-12 bg-cloud-white text-slate-text font-bold text-base rounded-inputs shadow-subtle border border-stone-border active:bg-stone-100 flex items-center justify-center cursor-pointer transition-all"
+                  >
+                    {key}
+                  </button>
+                ))}
+              </div>
+
+              <button
+                onClick={handleCashPaymentSuccess}
+                disabled={changeValue < 0}
+                className={`w-full font-semibold py-2.5 px-4 rounded-buttons text-sm transition-all shadow-sm ${
+                  changeValue >= 0
+                    ? 'bg-chartwell-blue text-cloud-white cursor-pointer active:scale-[0.98] hover:opacity-95'
+                    : 'bg-stone-border text-steel-gray cursor-not-allowed opacity-60'
+                }`}
+              >
+                Selesaikan & Cetak Struk
+              </button>
             </div>
           </div>
+        )}
 
-          {/* Final Process Checkout Action Button */}
-          <button
-            onClick={handleProcessTransaction}
-            disabled={!selectedMethod}
-            className={`w-full font-medium py-2.5 px-4 rounded-buttons text-sm transition-all shadow-sm ${
-              selectedMethod
-                ? 'bg-chartwell-blue text-cloud-white cursor-pointer active:scale-[0.98] hover:opacity-95'
-                : 'bg-stone-border text-steel-gray cursor-not-allowed opacity-60'
-            }`}
-          >
-            Konfirmasi & Proses Transaksi
-          </button>
-        </div>
+        {/* paymentStep === 'qris' (Sub-layar QRIS Kustom) */}
+        {paymentStep === 'qris' && (
+          <div className="p-4 space-y-4 flex flex-col max-h-[82vh] overflow-y-auto items-center">
+            <div className="w-full flex items-center gap-3 pb-3 border-b border-stone-border self-start">
+              <button 
+                onClick={() => { triggerFeedback(); setPaymentStep('cart'); }}
+                className="text-slate-text font-bold hover:text-chartwell-blue text-sm cursor-pointer p-1"
+              >
+                ← Kembali
+              </button>
+              <h2 className="font-medium text-slate-text text-sm">Pembayaran QRIS</h2>
+            </div>
+
+            <div className="text-center space-y-1">
+              <p className="text-caption text-ash-gray">Total Pembayaran</p>
+              <h3 className="text-heading font-semibold text-slate-text">{formatRupiah(cartSummary.total)}</h3>
+            </div>
+
+            {/* Dynamic QR Generator box */}
+            <div className="w-48 h-48 bg-cloud-white border border-stone-border rounded-cards flex flex-col items-center justify-center p-3 shadow-md relative overflow-hidden">
+              {qrisGenerating ? (
+                <div className="flex flex-col items-center gap-2">
+                  <div className="w-8 h-8 border-4 border-chartwell-blue border-t-transparent rounded-full animate-spin" />
+                  <p className="text-[10px] text-ash-gray font-medium animate-pulse">Spawning QRIS...</p>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-between w-full h-full">
+                  {/* Mock QR SVG Box */}
+                  <svg className="w-36 h-36 text-slate-text" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M3 3h8v8H3V3zm2 2v4h4V5H5zm8-2h8v8h-8V3zm2 2v4h4V5h-4zM3 13h8v8H3v-8zm2 2v4h4v-4H5zm13-2h3v2h-3v-2zm-3 3h3v2h-3v-2zm3 3h3v2h-3v-2zm-3-6h2v2h-2v-2zm4 4h1v1h-1v-1zm-1 1h1v1h-1v-1zm-2-2h1v1h-1v-1zm3-3h1v1h-1v-1zm-5-1h2v2h-2v-2zm3 3h1v1h-1v-1zm-1 1h1v1h-1v-1z" />
+                  </svg>
+                  <p className="text-[9px] text-green-600 bg-green-50 px-2 py-0.5 rounded-full font-bold border border-green-200">
+                    QRIS AKTIF (MOCK API)
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <p className="text-center text-caption text-ash-gray max-w-[240px] px-2 leading-relaxed">
+              Tunjukkan kode QRIS di atas kepada pelanggan untuk pembayaran instan.
+            </p>
+
+            <button
+              onClick={handleQrisPaymentSuccess}
+              disabled={qrisGenerating}
+              className="w-full bg-chartwell-blue text-cloud-white font-semibold py-2.5 px-4 rounded-buttons text-sm transition-all shadow-sm cursor-pointer hover:opacity-95 active:scale-[0.98] disabled:opacity-60"
+            >
+              Konfirmasi QRIS Sukses
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )

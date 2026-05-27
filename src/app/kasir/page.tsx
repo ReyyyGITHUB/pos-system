@@ -230,41 +230,41 @@ const ProductCard = React.memo(({
 
   if (isGrid) {
     return (
-      <div className="bg-cloud-white rounded-cards shadow-md border border-stone-border p-4 flex flex-col justify-between transition-all duration-150">
+      <div 
+        onClick={() => { triggerFeedback(); onAdd(product); }}
+        className="bg-cloud-white rounded-cards shadow-md border border-stone-border p-4 flex flex-col justify-between transition-all duration-100 cursor-pointer active:bg-stone-100 select-none"
+      >
         <div>
           {imageBlock}
           <h3 className="font-medium text-slate-text text-sm line-clamp-1">{product.name}</h3>
           <p className="text-steel-gray text-caption mt-0.5 line-clamp-1">{product.description}</p>
         </div>
         
+        {/* Anti-overflow Stacked layout for Mobile */}
         <div className="mt-3 flex flex-col gap-2">
           <span className="font-semibold text-slate-text text-sm leading-none">
             {formatRupiah(product.price)}
           </span>
           
-          {quantity > 0 ? (
-            <div className="flex items-center justify-between bg-sky-tint border border-chartwell-blue/20 rounded-buttons p-0.5 w-full">
+          {quantity > 0 && (
+            <div 
+              onClick={(e) => e.stopPropagation()} /* Prevents card-click trigger on plus/minus tap */
+              className="flex items-center justify-between bg-sky-tint border border-chartwell-blue/20 rounded-buttons p-0.5 w-full"
+            >
               <button 
-                onClick={() => { triggerFeedback(); onRemove(product.id); }}
+                onClick={(e) => { e.stopPropagation(); triggerFeedback(); onRemove(product.id); }}
                 className="w-6 h-6 bg-cloud-white rounded-full flex items-center justify-center font-bold text-chartwell-blue shadow-subtle cursor-pointer active:scale-90 select-none text-xs"
               >
                 -
               </button>
               <span className="font-semibold text-slate-text text-xs">{quantity}x</span>
               <button 
-                onClick={() => { triggerFeedback(); onAdd(product); }}
+                onClick={(e) => { e.stopPropagation(); triggerFeedback(); onAdd(product); }}
                 className="w-6 h-6 bg-cloud-white rounded-full flex items-center justify-center font-bold text-chartwell-blue shadow-subtle cursor-pointer active:scale-90 select-none text-xs"
               >
                 +
               </button>
             </div>
-          ) : (
-            <button
-              onClick={() => { triggerFeedback(); onAdd(product); }}
-              className="w-full bg-chartwell-blue text-cloud-white text-caption font-medium py-1.5 rounded-buttons shadow-sm active:scale-95 cursor-pointer select-none text-center"
-            >
-              + Tambah
-            </button>
           )}
         </div>
       </div>
@@ -272,7 +272,10 @@ const ProductCard = React.memo(({
   }
 
   return (
-    <div className="bg-cloud-white rounded-md shadow-sm border border-stone-border p-3 flex items-center justify-between gap-3">
+    <div 
+      onClick={() => { triggerFeedback(); onAdd(product); }}
+      className="bg-cloud-white rounded-md shadow-sm border border-stone-border p-3 flex items-center justify-between gap-3 cursor-pointer active:bg-stone-100 transition-colors duration-100 select-none"
+    >
       <div className="flex items-center gap-3">
         {product.image_url ? (
           <img 
@@ -293,29 +296,25 @@ const ProductCard = React.memo(({
         </div>
       </div>
 
-      {quantity > 0 ? (
-        <div className="flex items-center gap-2 bg-sky-tint border border-chartwell-blue/20 rounded-buttons p-0.5">
+      {quantity > 0 && (
+        <div 
+          onClick={(e) => e.stopPropagation()} /* Prevents card-click trigger on plus/minus tap */
+          className="flex items-center gap-2 bg-sky-tint border border-chartwell-blue/20 rounded-buttons p-0.5"
+        >
           <button 
-            onClick={() => { triggerFeedback(); onRemove(product.id); }}
+            onClick={(e) => { e.stopPropagation(); triggerFeedback(); onRemove(product.id); }}
             className="w-7 h-7 bg-cloud-white rounded-full flex items-center justify-center font-bold text-chartwell-blue shadow-subtle cursor-pointer active:scale-90 select-none"
           >
             -
           </button>
           <span className="font-semibold text-slate-text text-xs min-w-[14px] text-center">{quantity}</span>
           <button 
-            onClick={() => { triggerFeedback(); onAdd(product); }}
+            onClick={(e) => { e.stopPropagation(); triggerFeedback(); onAdd(product); }}
             className="w-7 h-7 bg-cloud-white rounded-full flex items-center justify-center font-bold text-chartwell-blue shadow-subtle cursor-pointer active:scale-90 select-none"
           >
             +
           </button>
         </div>
-      ) : (
-        <button
-          onClick={() => { triggerFeedback(); onAdd(product); }}
-          className="bg-chartwell-blue text-cloud-white text-caption font-medium py-1 px-3 rounded-buttons shadow-sm active:scale-95 cursor-pointer select-none"
-        >
-          + Tambah
-        </button>
       )}
     </div>
   )
